@@ -1,7 +1,6 @@
-function f = plotBernstein(poly, int, f)
+function f = plotBernstein(poly, f)
 arguments
     poly
-    int
     f=-1
 end
 
@@ -19,14 +18,15 @@ if dim ~= 2
     error("use 2D polynomials");
 end
 
-samples = linspace(int(1), int(end), n_samples);
+samples = linspace(0, 1, n_samples);
 
 for i=1:length(samples)
-    values(:,i) = evalBernstein_(poly, samples(i), int);
+    values(:,i) = deCasteljau(poly, samples(i), [0,1]);
 end
 for i=1:size(poly,2)
     scatter(poly(1,i),poly(2,i), "red", "o");
 end
+plot(poly(1,:),poly(2,:), "red")
 
 
 plot(values(1,:),values(2,:));
