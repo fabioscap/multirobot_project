@@ -1,8 +1,8 @@
-function value = evalBernstein(poly, t, int)
+function value = evalBernstein_(poly, t, int)
 %EVALBERNSTEIN Evaluate Bernstein polynomial at query point t
 % the bernstein polynomial is defined in interval [int(start),int(end)]
 
-% TODO research de casteljau algorithm and see if it is better
+% do not use this use deCasteljau
 
 t0 = int(1);
 tf = int(2);
