@@ -58,6 +58,9 @@ classdef Environment
                                    obj.z_bnd(1) + rand()*(obj.z_bnd(2) - obj.z_bnd(1))];     
                 end
                 ai = Agent(random_position);
+
+                disp("agent "+i+" at pos: ");
+                random_position
                 if i == 1
                     obj.agents = [ai];
                 else
@@ -73,6 +76,8 @@ classdef Environment
                 obj.dim_x = 10;
             end
             obj.S = eye(obj.dim_x, obj.dim_x);
+
+            obj.p_hat = zeros(dim, 1);
 
         end
         

@@ -1,7 +1,9 @@
-function f = plotBernstein(poly, f)
+function f = plotBernstein(poly, int, f, col)
 arguments
     poly
+    int=[0,1]
     f=-1
+    col = "red"
 end
 
 n_samples = 100;
@@ -12,23 +14,30 @@ else
 end
 hold on;
 dim = size(poly,1);
-values = zeros(2,n_samples);
+values = zeros(dim,n_samples);
 
-if dim ~= 2
-    error("use 2D polynomials");
-end
+if dim == 2
+    % plot x over y
+    samples = linspace(int(1), int(end), n_samples);
+    
+    for i=1:length(samples)
+        values(:,i) = deCasteljau(poly, samples(i), int);
+    end
+    for i=1:size(poly,2)
+        scatter(poly(1,i),poly(2,i), col, "o");
+    end
+    plot(poly(1,:),poly(2,:), col)
+    
+    
+    plot(values(1,:),values(2,:));
+    axis equal
 
-samples = linspace(0, 1, n_samples);
+elseif dim == 1
+    % plot poly over time
+    t = linspace(int(1),int(end) ,n_samples);
 
-for i=1:length(samples)
-    values(:,i) = deCasteljau(poly, samples(i), [0,1]);
-end
-for i=1:size(poly,2)
-    scatter(poly(1,i),poly(2,i), "red", "o");
-end
-plot(poly(1,:),poly(2,:), "red")
-
-
-plot(values(1,:),values(2,:));
-axis equal
+    for i=1:length(t)
+        values(:,i) = deCasteljau(poly, t(i), [0,1]);
+    end
+    plot(t, values, col);
 end

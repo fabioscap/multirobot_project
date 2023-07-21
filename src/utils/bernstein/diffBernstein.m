@@ -1,6 +1,6 @@
 function poly_dot = diffBernstein(poly,int)
 %DIFFBERNSTEIN gets the bernstein coefficients of the differentiated poly
-window = int(end)-int(start);
+window = int(end)-int(1);
 
 N = size(poly,2)-1;
 
