@@ -1,4 +1,4 @@
-function [tf , p] = planningProblem(Env)
+function [int , p] = planningProblem(Env)
 %PLANNINGPROBLEM Builds the simplified planning problem using
 % Bernstein approximants
     
@@ -19,13 +19,16 @@ function [tf , p] = planningProblem(Env)
 
     nlc = @(x) constraintsNL(x, Env);
     options = optimoptions(@fmincon);
-    %options = optimoptions(@fmincon,'MaxFunctionEvaluations',10000);
+    % TODO adjust this number
+    options = optimoptions(@fmincon,'MaxFunctionEvaluations',200);
+    % TODO see if we can add early stopping
     [x, ~] = fmincon(cf, x0, [], [], [], [], lb, [], nlc, options);
 
     % get the quantities of interest from x
     tf = x(1);
+    int = [Env.t, tf];
     p = reshape(x(2:end), Env.dim, order, length(Env.agents));
-
+    int
 end
 
 function y = costFunction(x, Env)

@@ -8,6 +8,12 @@ arguments
     noise=true % enable/disable additive noise
     m=1.0 % amplitude of transmitter (see Avalanche Victim Search...)
 end
+    if length(p_r) == 2
+        p_r = [p_r; 0];
+    end 
+    if length(p_t) == 2
+        p_t = [p_t; 0];
+    end
     % transform the receiver position in the transmitter frame
     T_r = [R_r p_r; 0 0 0 1];
     T_t = [R_t p_t; 0 0 0 1];

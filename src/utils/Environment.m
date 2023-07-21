@@ -1,4 +1,4 @@
-classdef Environment
+classdef Environment < handle
     %ENVIRONMENT Summary of this class goes here
     %   Detailed explanation goes here
     
@@ -29,11 +29,17 @@ classdef Environment
 
 
         % simulation parameters
-        t=0;
+        t = 0 % simtime
         dt = 0.001 % timestep
+        T= 100 % total simulation time
+        % TODO add stopping criteria
         
-        % trajectory horizon (you get this from solving opt problem)
-        tf;
+        % trajectory interval (you get this from solving opt problem)
+        interval
+
+        % replanning interval
+        t_bar = 10;
+
 
     end
     
@@ -75,6 +81,8 @@ classdef Environment
             elseif dim == 3
                 obj.dim_x = 10;
             end
+
+            obj.x = zeros(obj.dim_x,1);
             obj.S = eye(obj.dim_x, obj.dim_x);
 
             obj.p_hat = zeros(dim, 1);
@@ -93,7 +101,8 @@ classdef Environment
 
                 % collect the individual measurements for each agent
                 % TODO set noise to true
-                sig = getARTVAsig(p, obj.p_t, false);
+
+                sig = getARTVAsig(p, obj.p_t, eye(3), eye(3), false);
                 % construct the output
                 Y(i) = ( (obj.m/(norm(sig)*4*pi))^(1/3)*(obj.ab(1)*obj.ab(2)) )^2;
 
@@ -106,7 +115,41 @@ classdef Environment
 
         % trajectory planning
         function obj = planTrajectories(obj)
-            % we put this in another file for readability
+            [int, P] = planningProblem(obj);
+            obj.interval = int;
+            for a=1:length(obj.agents)
+                obj.agents(a).traj = P(:,:,a);
+            end
+        end
+
+
+        function obj = sim(obj)
+            disp("sim")
+            obj.t = 0;
+            % plan the first trajectories
+            obj.planTrajectories();
+            last_replan = 0;
+
+            for t=linspace(0, obj.T, obj.T/obj.dt)
+                obj.t = t;
+                % refine the estimation
+                obj.RLSStep();
+                obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
+
+                % if conditions are met replan
+                if t - last_replan > obj.t_bar
+                    disp("replanning at " + t)
+                    obj.planTrajectories();
+                    last_replan = t;
+                end
+
+
+                % update position of agents
+                for a=1:length(obj.agents)
+                    obj.agents(a).position = ...
+                        deCasteljau(obj.agents(a).traj, t, obj.interval);
+                end
+            end
 
         end
     end
