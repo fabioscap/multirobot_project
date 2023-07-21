@@ -1,14 +1,16 @@
-function h_m = getARTVAsig(p_r,p_t,noise,m)
+function h_m = getARTVAsig(p_r,p_t,R_r, R_t, noise,m)
 %getARTVAsig eq. 6 of Avalanche Victim Search via Robust Observers
 arguments
     p_r % pose of the receiver
-    p_t=[0;0;0;0;0;0] % pose of the transmitter
+    p_t=[0;0;0] % pose of the transmitter
+    R_r = eye(3) % orientation of the receiver
+    R_t = eye(3) % orientation of the transmitter
     noise=true % enable/disable additive noise
     m=1.0 % amplitude of transmitter (see Avalanche Victim Search...)
 end
     % transform the receiver position in the transmitter frame
-    T_r = v2t(p_r);
-    T_t = v2t(p_t);
+    T_r = [R_r p_r; 0 0 0 1];
+    T_t = [R_t p_t; 0 0 0 1];
 
     T_rt = T_t * inv(T_r);
 

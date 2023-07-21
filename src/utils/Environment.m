@@ -4,6 +4,7 @@ classdef Environment
     
     properties
         dim
+        dim_x
 
         N % the number of agents
         p_t % the pose of the target (unknown to agents)
@@ -22,14 +23,17 @@ classdef Environment
 
         % TODO validate these parameters
         % initializer for the S matrix in RLS
-        S = eye(10,10);
+        S ;
         % forgetting factor
         beta = 0.9;
 
 
         % simulation parameters
-        t=0 %initial time
+        t=0;
         dt = 0.001 % timestep
+        
+        % trajectory horizon (you get this from solving opt problem)
+        tf;
 
     end
     
@@ -63,6 +67,13 @@ classdef Environment
             
             obj.tau = tau;
 
+            if dim == 2
+                obj.dim_x = 6;
+            elseif dim == 3
+                obj.dim_x = 10;
+            end
+            obj.S = eye(obj.dim_x, obj.dim_x);
+
         end
         
         % RLS recursive step (eq. 5)
@@ -71,17 +82,9 @@ classdef Environment
             % this has to be called whenever we receive 
             % a new ARTVA sample 
             Y = zeros(obj.N,1);
-            H = zeros(10, obj.N);
+            H = zeros(obj.dim_x, obj.N);
             for i=1:obj.N
-
                 p = obj.agents(i).position;
-                % how do we handle orientations?
-                % it seems that the papers forget about them
-                if length(p) == 2
-                    p = [p; 0];
-                else
-                    p = [p; 0;0;0];
-                end
 
                 % collect the individual measurements for each agent
                 % TODO set noise to true
@@ -90,20 +93,10 @@ classdef Environment
                 Y(i) = ( (obj.m/(norm(sig)*4*pi))^(1/3)*(obj.ab(1)*obj.ab(2)) )^2;
 
                 % build phi vector
-                H(:,i) = [p(1)^2; 2*p(1)*p(2); 2*p(1)*p(3);...
-                          p(2)^2; 2*p(2)*p(3); p(3)^2;     ...
-                         -2*p(1);-2*p(2);-2*p(3);  1];
+                H(:,i) = buildPhi(p);
             end
             obj.x = obj.x + obj.S\(H*(Y-H'*obj.x));
             obj.S = obj.beta*obj.S + H*H';
-        end
-
-        % inverse mapping to get p_hat back from x
-        function obj = extractTarget(obj)
-            %TODO use property 1 instead of this formula
-            % to clamp the eigenvalues of M
-            M = reshape(obj.x(start:6),3,3);
-            obj.p_hat = M\obj.x(7);
         end
 
         % trajectory planning

@@ -23,7 +23,7 @@ classdef Agent
             obj.position = initial_position;
 
             obj.dim = length(initial_position);
-            obj.traj = zeros(dim,1);
+            obj.traj = zeros(obj.dim,1);
         end
     end
 end

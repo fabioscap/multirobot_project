@@ -6,24 +6,17 @@ p_t = [ 0; 0; 0];
 
 
 % the number of agents
-N = 3;
+n_agents = 3;
 
 
 % the sampling time for the ARTVA signal
 % agents receive samples at discrete intervals
 tau = 0.1;
 
-e = Environment(2, N, p_t, tau);
-
-% TODO implement de casteljau to split / eval bernstein polynomials
-% or better find a matlab library that already has all the implementations
-
-% split is necessary to implement one of the constraints in the optimal
-% problem
+e = Environment(2, n_agents, p_t, tau);
 
 
-
-
-
-
-
+% TODO define how to handle
+% orientations: do we need them?
+% 2D/3D: adapth the observability index in 2D and the whole estimation
+% pipeline

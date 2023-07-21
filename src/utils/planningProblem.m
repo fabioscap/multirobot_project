@@ -10,6 +10,27 @@ function problem = planningProblem(Env)
 
 end
 
+function y = costFunction(x, Env)
+    w1 = 1.0;
+    w2 = 1.0;
+    w3 = 1.0;
+
+    % get the quantities of interest from x
+    tf = x(1);
+    p = reshape(x(2:end), Env.dim, [], length(Env.agents));
+
+    y = w1 * minTime(tf, Env) + ...
+        w2 * minEffort(tf, p, Env) + ...
+       -w3 * maxObservability(tf, p, Env);
+end
+
+function y = constraintsNL(x, Env) 
+    % get the quantities of interest from x
+    tf = x(1);
+    p = reshape(x(2:end), Env.dim, [], length(Env.agents));
+    
+end
+
 % define the individual cost functions terms
 
 % minimize mission time
@@ -37,33 +58,28 @@ end
 
 % maximize the observability performance index
 function y = maxObservability(tf, p, Env)
-    s_tf = floor(tf/Env.tau);
-    s_t0 = floor(Env.t/Env.tau);
-
-    O = zeros(10,10);
-    % eq. 7
-    for i=s_t0+1:s_tf
-        % tau_i: the sample time of the ith sample
-        tau_i = i*Env.tau;
-        H = zeros(10, obj.N);
-        for a=1:length(Env.agents)
-            % the bernstein poly. of agent a
-            p_a = p(:,:,a);
-            % where agent a will be at time tau_i
-            pos = evalBernstein(p_a, tau_i, [tf, Env.t]);
-            if length(pos) == 2
-                pos = [p; 0];
-            end
-            % build phi vector
-            H(:,a) = [pos(1)^2; 2*pos(1)*pos(2); 2*pos(1)*pos(3);...
-                      pos(2)^2; 2*pos(2)*pos(3); pos(3)^2;     ...
-                     -2*pos(1);-2*pos(2);-2*pos(3);  1];
-        end
-        O = O + H*H';
-    end
-
-    O = O / (s_tf - s_t0);
-
-    y = min(svd(O));
+    y = obsIndex(p,[Env.t, tf], Env.tau);
 
 end
+
+
+% define the constraints
+
+% 15a 
+% starting position (no velocity for now)
+function y = startingPosition(p)
+    y = squeeze(p(:,1,:));
+end
+
+% 15b
+% get to the estimated target
+function y = endingPosition(p, Env)
+    p_f = squeeze(p(:,end,:)); % should be dimxA
+    p_t = reshape(Env.p_hat, [], 1);
+    deltas = p_f - p_t;
+    y = vecnorm(deltas, 2, 1); % should be 1xA;
+end
+
+% 15c interdistance TODO
+
+% 15d safe velocity TODO
