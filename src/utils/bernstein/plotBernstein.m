@@ -23,10 +23,12 @@ if dim == 2
     for i=1:length(samples)
         values(:,i) = deCasteljau(poly, samples(i), int);
     end
-    for i=1:size(poly,2)
-        scatter(poly(1,i),poly(2,i), col, "o");
-    end
-    plot(poly(1,:),poly(2,:), col)
+
+    % plot control points TODO add enable/disabler for this option
+    % for i=1:size(poly,2)
+    %     scatter(poly(1,i),poly(2,i), col, "o");
+    % end
+    % plot(poly(1,:),poly(2,:), col)
     
     
     plot(values(1,:),values(2,:));

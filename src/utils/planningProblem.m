@@ -3,60 +3,71 @@ function [int , p] = planningProblem(Env)
 % Bernstein approximants
     
 % we want to search for:
-% tf: final absolute time
+% T : trajectory duration
 % pd: bernstein coefficients for the trajectories of the agents 
-%     for the interval [Env.t, tf]
+%     for the interval [Env.t, Env.t + T]
 %     shape: (dimxorderxN_agents)
-    order = 5; % fifth order bernstein approx.
-    
-    x0 = [Env.t+ 0.1;zeros(Env.dim* order* length(Env.agents),1)];
+%     the first coefficient is hardcoded to the current positions of
+%     the agents
 
-    lb = -inf*ones(size(x0));
-    lb(1) = Env.t + 0.001 ; % we want tf to be bigger than the current time
+    startingPos = Env.positions;
+    x0 = [10;reshape(repmat(startingPos,1,Env.order,1), [],1)];
+
+    lb = -100*ones(size(x0));
+    ub = 100*ones(size(x0));
+    lb(1) = 0;
+    ub(1) = 50;
 
     cf = @(x) costFunction(x, Env);
-
-
     nlc = @(x) constraintsNL(x, Env);
+
     options = optimoptions(@fmincon);
-    % TODO adjust this number
-    options = optimoptions(@fmincon,'MaxFunctionEvaluations',200);
+    % TODO adjust this number 
+    % performance highly depends on x0 and the weights
+    % find a setting that is accurate and does not take ages
+    options = optimoptions(@fmincon,"MaxFunctionEvaluations", 200);
     % TODO see if we can add early stopping
-    [x, ~] = fmincon(cf, x0, [], [], [], [], lb, [], nlc, options);
+    [x, ~] = fmincon(cf, x0, [], [], [], [], lb, ub, nlc, options);
+    
+    % DEBUG visualization: check the constraints values
+    [c_in, c_eq] = constraintsNL(x, Env)
 
     % get the quantities of interest from x
-    tf = x(1);
-    int = [Env.t, tf];
-    p = reshape(x(2:end), Env.dim, order, length(Env.agents));
-    int
+    T = x(1);
+    int = [Env.t, Env.t + T]
+    startingPos = Env.positions;
+    p = cat(2,startingPos,reshape(x(2:end), Env.dim, [], Env.n_agents));
 end
 
 function y = costFunction(x, Env)
-    w1 = 0.3;
+    w1 = 0.1;
     w2 = 1;
-    w3 = 0.01;
+    w3 = 0.3;
 
     % get the quantities of interest from x
-    tf = x(1);
-    p = reshape(x(2:end), Env.dim, [], length(Env.agents));
+    T = x(1);
+    startingPos = Env.positions;
+    p = cat(2,startingPos,reshape(x(2:end), Env.dim, [], Env.n_agents));
     
-    y = w1 * minTime(tf, Env) + ...
-        w2 * minEffort(tf, p, Env) + ...
-       -w3 * maxObservability(tf, p, Env);
+    y = w1 * minTime(T, Env) + ...
+        w2 * minEffort(T, p, Env) + ...
+       -w3 * maxObservability(T, p, Env);
 end
 
 % let's try to put every constraint here (even the linear ones)
 % and if it does not work  split them
 function [c_in, c_eq] = constraintsNL(x, Env) 
-    % get the quantities of interest from x
+    
 
     % c_in <= 0
     c_in = [];
     % c_eq == 0
     c_eq = [];
-
-    tf = x(1);
-    p = reshape(x(2:end), Env.dim, [], length(Env.agents));
+    
+    % get the quantities of interest from x
+    T = x(1);
+    startingPos = Env.positions;
+    p = cat(2,startingPos,reshape(x(2:end), Env.dim, [], Env.n_agents));
     
     % arrive near estimated target
     delta = 3.0;
@@ -64,34 +75,28 @@ function [c_in, c_eq] = constraintsNL(x, Env)
 
     % inter vehicle distance TODO
 
-    % starting positions
-    positions = zeros(Env.dim, length(Env.agents));
-    c0        = reshape(p(:,1,:), [],1);
-    for a=1:length(Env.agents)
-        positions(:,a) = Env.agents(a).position;
-    end
-    positions = reshape(positions,[], 1);
-    c_eq = [c_eq; c0 - positions];
+    % safe velocity
+    speed_thr = 49;
+    max_speed = maxSpeed(T, p, Env);
+    c_in = [c_in; max_speed - speed_thr];
   
 end
 
 % define the individual cost functions terms
 
 % minimize mission time
-% TODO try to search for an interval t instead of tf
-% so that tf = Env.t + t (probably works better)
-function y = minTime(tf, Env)
-    y = tf - Env.t;
+function y = minTime(T, Env)
+    y = T;
 end
 
 % minimize actuation effort
 % TODO change the problem so you actaully search
 % for p_ddot directly instead and integrate the coefficients
 % later
-function y = minEffort(tf, p, Env)
-    int = [Env.t, tf];
+function y = minEffort(T, p, Env)
+    int = [Env.t, Env.t+T];
     y = 0;
-    for a=1:length(Env.agents)
+    for a=1:Env.n_agents
         p_ddot = diffBernstein(diffBernstein(p(:,:,a),int), int);
         nrm    = sqNormBernstein(p_ddot);
         effort = intBernstein(nrm, int);
@@ -101,8 +106,8 @@ function y = minEffort(tf, p, Env)
 end
 
 % maximize the observability performance index
-function y = maxObservability(tf, p, Env)
-    y = obsIndex(p,[Env.t, tf], Env.tau);
+function y = maxObservability(T, p, Env)
+    y = obsIndex(p,[Env.t, Env.t+T], Env.tau);
 
 end
 
@@ -121,20 +126,30 @@ function y = endingPosition(p, Env)
     p_f = squeeze(p(:,end,:)); % should be dimxA
     p_t = reshape(Env.p_hat, [], 1);
     deltas = p_f - p_t;
-    y = vecnorm(deltas, 2, 1); % should be 1xA;
+    y = reshape(vecnorm(deltas, 2, 1),[],1); % should be Ax1;
 end
 
 % 15c interdistance TODO
 
 % 15d safe velocity TODO
-function y = maxVelocity(tf, p, Env)
-    for a=1:length(Env.agents)
-        int = [Env.t, tf];
+function y = maxSpeed(T, p, Env)
+    y = zeros(Env.n_agents, 1);
+    int = [Env.t, Env.t + T];
+    for a=1:Env.n_agents
         p_a = p(:,:,a);
         pd_a = diffBernstein(p_a, int);
 
         speed_a = sqNormBernstein(pd_a);
-
+        y(a) = extrBernstein(speed_a, int);
     end
 
+end
+
+function stop = customOutputFcn(x, optimValues, state)
+    % Check for feasibility of the current solution
+    if any(optimValues.constrviolation <= 0)
+        stop = true; % Terminate the optimization if any constraint is satisfied
+    else
+        stop = false; % Continue optimization if no constraint is satisfied
+    end
 end

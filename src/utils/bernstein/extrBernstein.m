@@ -8,7 +8,7 @@ arguments
     alpha = 0 % lower bound for maximun
     tol = 1e-3
 end
-    pause()
+    %pause()
     N = size(poly,2)-1;
     dim = size(poly,1);
     if dim ~= 1
@@ -30,9 +30,9 @@ end
         extr = lb;
         return
     end
-    disp("alpha:" + alpha);
-    disp("lower bound: " + lb);
-    disp("upper bound:" + ub);
+    % disp("alpha:" + alpha);
+    % disp("lower bound: " + lb);
+    % disp("upper bound:" + ub);
     % split
     t_split = ((i_ub-1)/N)*(int(end)-int(1)) + int(1);
     
@@ -42,10 +42,10 @@ end
         return
     end
     [~, pa, pb] = deCasteljau(poly, t_split, int);
-    disp("calling on left split: " + int(1) + ":" + t_split )
+    % disp("calling on left split: " + int(1) + ":" + t_split )
    
     extr_a = extrBernstein(pa, [int(1), t_split], alpha);
-    disp("calling on right split: " + t_split + " :" + int(end));
+    % disp("calling on right split: " + t_split + " :" + int(end));
  
     extr_b = extrBernstein(pb, [t_split, int(end)], alpha);
     

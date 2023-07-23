@@ -13,7 +13,14 @@ classdef Environment < handle
         x_bnd = [-50; 50];
         y_bnd = [-50; 50];
         z_bnd = [-10; 10];
+        
+        % agents
+        n_agents
         agents = []
+        trajectories
+        order = 4;
+        positions
+
 
         tau % ARTVA sampling time
         m=1   % ARTVA amplitude
@@ -25,7 +32,7 @@ classdef Environment < handle
         % initializer for the S matrix in RLS
         S ;
         % forgetting factor
-        beta = 0.9;
+        beta = 0.99;
 
 
         % simulation parameters
@@ -49,10 +56,12 @@ classdef Environment < handle
 
             obj.dim = dim;
 
-            obj.N = N;
+            obj.n_agents = N;
             obj.p_t = p_t;
-            
-            for i=1:N
+
+            obj.trajectories = zeros(dim, obj.order+1, obj.n_agents);
+            obj.positions    = zeros(dim , 1, obj.n_agents);
+            for i=1:obj.n_agents
                 % TODO define other initialization methods for the agent
                 % (maybe equally spaced around a point)
                 if obj.dim == 2
@@ -63,17 +72,12 @@ classdef Environment < handle
                                    obj.y_bnd(1) + rand()*(obj.y_bnd(2) - obj.y_bnd(1));
                                    obj.z_bnd(1) + rand()*(obj.z_bnd(2) - obj.z_bnd(1))];     
                 end
-                ai = Agent(random_position);
-
+                obj.positions(:,1,i) = random_position;
                 disp("agent "+i+" at pos: ");
                 random_position
-                if i == 1
-                    obj.agents = [ai];
-                else
-                    obj.agents(i) = ai;
-                end
+
             end
-            
+
             obj.tau = tau;
 
             if dim == 2
@@ -91,35 +95,41 @@ classdef Environment < handle
         
         % RLS recursive step (eq. 5)
         function obj = RLSStep(obj)
+
+            step_size = 0.1;
+
             % we update the estimate of the unknown vector x
             % this has to be called whenever we receive 
             % a new ARTVA sample 
             Y = zeros(obj.N,1);
             H = zeros(obj.dim_x, obj.N);
             for i=1:obj.N
-                p = obj.agents(i).position;
+                p = obj.positions(:,1,i);
 
                 % collect the individual measurements for each agent
                 % TODO set noise to true
-
                 sig = getARTVAsig(p, obj.p_t, eye(3), eye(3), false);
                 % construct the output
-                Y(i) = ( (obj.m/(norm(sig)*4*pi))^(1/3)*(obj.ab(1)*obj.ab(2)) )^2;
-
+                Y(i) = ( (obj.m/(norm(sig)*4*pi))^(2/3) )* (obj.ab(1)*obj.ab(2))^2;
                 % build phi vector
                 H(:,i) = buildPhi(p);
             end
-            obj.x = obj.x + obj.S\(H*(Y-H'*obj.x));
-            obj.S = obj.beta*obj.S + H*H';
+            % Try this equations from chatGPT
+            K = (obj.S*H ) / (H'*obj.S*H);
+            
+            disp("error")
+            Y - H'*obj.x
+
+            obj.x = obj.x + step_size*K*(Y - H'*obj.x);
+            obj.S = obj.S + K*H'*obj.S;
+
+            obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
+            obj.p_hat
         end
 
         % trajectory planning
         function obj = planTrajectories(obj)
-            [int, P] = planningProblem(obj);
-            obj.interval = int;
-            for a=1:length(obj.agents)
-                obj.agents(a).traj = P(:,:,a);
-            end
+            [obj.interval, obj.trajectories] = planningProblem(obj);
         end
 
 
@@ -129,12 +139,20 @@ classdef Environment < handle
             % plan the first trajectories
             obj.planTrajectories();
             last_replan = 0;
+            
+            samples = 0;
 
             for t=linspace(0, obj.T, obj.T/obj.dt)
                 obj.t = t;
-                % refine the estimation
-                obj.RLSStep();
-                obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
+
+                % check if we have a new ARTVA sample
+                if (floor(t/obj.tau) >= samples)
+                    disp("new sample at:" + t);
+                    samples = samples+1;
+                    % refine the estimation
+                    obj.RLSStep();
+                    %pause();
+                end
 
                 % if conditions are met replan
                 if t - last_replan > obj.t_bar
@@ -145,10 +163,11 @@ classdef Environment < handle
 
 
                 % update position of agents
-                for a=1:length(obj.agents)
-                    obj.agents(a).position = ...
-                        deCasteljau(obj.agents(a).traj, t, obj.interval);
+                for a=1:obj.n_agents
+                    obj.positions(:,1,a) = ...
+                        deCasteljau(obj.trajectories(:,:,a), t, obj.interval);
                 end
+                
             end
 
         end

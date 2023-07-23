@@ -48,7 +48,7 @@ end
 
 O = O / (s_tf - s_t0);
 svalues = svd(O);
-disp("Observability index: ")
+disp("Observability index: ");
 sigma = min(svalues)
 
 % builds the phi vector from a 3d or 2d position
