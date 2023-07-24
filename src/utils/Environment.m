@@ -32,7 +32,7 @@ classdef Environment < handle
         % initializer for the S matrix in RLS
         S ;
         % forgetting factor
-        beta = 0.5;
+        beta = 0.8;
 
 
         % simulation parameters
@@ -117,6 +117,8 @@ classdef Environment < handle
             obj.S = (1/obj.beta) * (obj.S - K*H'*obj.S);
 
             obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
+
+            obj.p_hat
         end
 
         % trajectory planning

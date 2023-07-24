@@ -16,7 +16,9 @@ function target = extractTarget(x, a, b)
     end
     % clamp the singular values to have a
     % consistent estimate (paper 1)
-    M = saturateSValues(M, a^2, b^2);
+
+    % this makes 
+    % M = saturateSValues(M, a^2, b^2);
 
     target = M\y;
 end
