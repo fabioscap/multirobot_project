@@ -1,4 +1,4 @@
-function h_m = getARTVAsig(p_r,p_t,R_r, R_t, noise,m)
+function h_m_norm = getARTVAsig(p_r,p_t,R_r, R_t, noise,m)
 %getARTVAsig eq. 6 of Avalanche Victim Search via Robust Observers
 arguments
     p_r % pose of the receiver
@@ -7,6 +7,11 @@ arguments
     R_t = eye(3) % orientation of the transmitter
     noise=true % enable/disable additive noise
     m=1.0 % amplitude of transmitter (see Avalanche Victim Search...)
+end
+% try to use approx. output
+persistent ab
+if isempty(ab)
+    ab = eq8(200);
 end
     if length(p_r) == 2
         p_r = [p_r; 0];
@@ -34,13 +39,16 @@ end
     T_tr = inv(T_rt);
     h_n = T_tr(1:3, 1:3) * h_t;
 
+    p = x_rt; 
+    %h_n = (m/(4*pi)) * ( (ab(1)^2*ab(2)^2) / ...
+    %                    (  (p(1)*ab(2))^2 + (p(2)^2+p(3)^2)*ab(1)^2 ) ^(3/2));
 
     % add noise
     if noise
         % TODO implement noise
         error("not implemented");
     else
-        h_m = h_n;
+        h_m_norm = norm(h_n);
     end
 
     % maybe return directly the norm? it seems that

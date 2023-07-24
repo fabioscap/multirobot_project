@@ -30,12 +30,12 @@ function [int , p] = planningProblem(Env)
     [x, ~] = fmincon(cf, x0, [], [], [], [], lb, ub, nlc, options);
     
     % DEBUG visualization: check the constraints values
-    [c_in, c_eq] = constraintsNL(x, Env)
+    [c_in, c_eq] = constraintsNL(x, Env);
 
     % get the quantities of interest from x
     T = x(1);
-    int = [Env.t, Env.t + T]
     startingPos = Env.positions;
+    int = [Env.t, Env.t + T];
     p = cat(2,startingPos,reshape(x(2:end), Env.dim, [], Env.n_agents));
 end
 

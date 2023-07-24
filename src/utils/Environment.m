@@ -10,8 +10,8 @@ classdef Environment < handle
         p_t % the pose of the target (unknown to agents)
         x % the unknown vector x (see references)
         p_hat % the current estimate of the target
-        x_bnd = [-50; 50];
-        y_bnd = [-50; 50];
+        x_bnd = [-20; 20];
+        y_bnd = [-20; 20];
         z_bnd = [-10; 10];
         
         % agents
@@ -23,7 +23,7 @@ classdef Environment < handle
 
 
         tau % ARTVA sampling time
-        m=1   % ARTVA amplitude
+        m=10   % ARTVA amplitude
         
         % coefficients for the approximation of the output
         ab = eq8(200); 
@@ -32,7 +32,7 @@ classdef Environment < handle
         % initializer for the S matrix in RLS
         S ;
         % forgetting factor
-        beta = 0.99;
+        beta = 0.5;
 
 
         % simulation parameters
@@ -82,12 +82,12 @@ classdef Environment < handle
 
             if dim == 2
                 obj.dim_x = 6;
+                obj.x = [obj.m 0 obj.m -1 1 0]';
             elseif dim == 3
                 obj.dim_x = 10;
+                obj.x = [obj.m 0 0 obj.m 0 obj.m 0 0 0 0]';
             end
-
-            obj.x = zeros(obj.dim_x,1);
-            obj.S = eye(obj.dim_x, obj.dim_x);
+            obj.S =0.1* eye(obj.dim_x, obj.dim_x);
 
             obj.p_hat = zeros(dim, 1);
 
@@ -95,36 +95,28 @@ classdef Environment < handle
         
         % RLS recursive step (eq. 5)
         function obj = RLSStep(obj)
-
-            step_size = 0.1;
-
             % we update the estimate of the unknown vector x
             % this has to be called whenever we receive 
-            % a new ARTVA sample 
-            Y = zeros(obj.N,1);
-            H = zeros(obj.dim_x, obj.N);
-            for i=1:obj.N
+            % a new ARTVA sample
+            Y = zeros(obj.n_agents,1);
+            H = zeros(obj.dim_x, obj.n_agents);
+            for i=1:obj.n_agents
                 p = obj.positions(:,1,i);
 
                 % collect the individual measurements for each agent
                 % TODO set noise to true
-                sig = getARTVAsig(p, obj.p_t, eye(3), eye(3), false);
+                sig_norm = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
                 % construct the output
-                Y(i) = ( (obj.m/(norm(sig)*4*pi))^(2/3) )* (obj.ab(1)*obj.ab(2))^2;
+                Y(i) = ( (obj.m/(sig_norm*4*pi))^(2/3) )* (obj.ab(1)*obj.ab(2))^2;
                 % build phi vector
                 H(:,i) = buildPhi(p);
             end
-            % Try this equations from chatGPT
-            K = (obj.S*H ) / (H'*obj.S*H);
-            
-            disp("error")
-            Y - H'*obj.x
 
-            obj.x = obj.x + step_size*K*(Y - H'*obj.x);
-            obj.S = obj.S + K*H'*obj.S;
+            K = obj.S * H /( obj.beta*eye(obj.n_agents, obj.n_agents) + H'*obj.S*H) ;
+            obj.x = obj.x + K *(Y - H'*obj.x);
+            obj.S = (1/obj.beta) * (obj.S - K*H'*obj.S);
 
             obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
-            obj.p_hat
         end
 
         % trajectory planning
@@ -147,7 +139,6 @@ classdef Environment < handle
 
                 % check if we have a new ARTVA sample
                 if (floor(t/obj.tau) >= samples)
-                    disp("new sample at:" + t);
                     samples = samples+1;
                     % refine the estimation
                     obj.RLSStep();
@@ -155,7 +146,7 @@ classdef Environment < handle
                 end
 
                 % if conditions are met replan
-                if t - last_replan > obj.t_bar
+                if t - last_replan > obj.t_bar || t > obj.interval(end)
                     disp("replanning at " + t)
                     obj.planTrajectories();
                     last_replan = t;

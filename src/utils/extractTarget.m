@@ -11,6 +11,8 @@ function target = extractTarget(x, a, b)
         M = [x(1) x(2);
              x(2) x(3)];
         y = [x(4); x(5)];
+    else
+        error("unknown x dimension");
     end
     % clamp the singular values to have a
     % consistent estimate (paper 1)

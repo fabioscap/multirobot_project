@@ -9,7 +9,7 @@ s_t0 = floor(int(1)/tau);
 
 if dim == 2
     dim_o = 6;
-else 
+elseif dim == 3
     dim_o = 10;
 end
 
