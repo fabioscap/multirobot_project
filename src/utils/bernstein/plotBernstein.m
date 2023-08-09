@@ -39,7 +39,7 @@ elseif dim == 1
     t = linspace(int(1),int(end) ,n_samples);
 
     for i=1:length(t)
-        values(:,i) = deCasteljau(poly, t(i), [0,1]);
+        values(:,i) = deCasteljau(poly, t(i), int);
     end
     plot(t, values, col);
 end
