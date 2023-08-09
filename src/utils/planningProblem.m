@@ -2,6 +2,11 @@ function [int , p] = planningProblem(Env)
 %PLANNINGPROBLEM Builds the simplified planning problem using
 % Bernstein approximants
     
+% TODO maybe omit dependency on Env and just pass what is needed:
+% starting time
+% starting positions
+% target estimate
+
 % we want to search for:
 % T : trajectory duration
 % pd: bernstein coefficients for the trajectories of the agents 
@@ -75,8 +80,8 @@ function [c_in, c_eq] = constraintsNL(x, Env)
 
     % inter vehicle distance TODO
 
-    % safe velocity
-    speed_thr = 49;
+    % safe velocity (actually the square)
+    speed_thr = 49; % = 7 m/s * 7 m/s
     max_speed = maxSpeed(T, p, Env);
     c_in = [c_in; max_speed - speed_thr];
   

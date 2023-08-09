@@ -23,6 +23,7 @@ classdef Environment < handle
 
 
         tau % ARTVA sampling time
+        last_sample = 0
         m=10   % ARTVA amplitude
         
         % coefficients for the approximation of the output
@@ -36,16 +37,14 @@ classdef Environment < handle
 
 
         % simulation parameters
-        t = 0 % simtime
-        dt = 0.001 % timestep
-        T= 100 % total simulation time
-        % TODO add stopping criteria
+        t=0
         
         % trajectory interval (you get this from solving opt problem)
         interval
 
         % replanning interval
         t_bar = 10;
+        last_replan = 0
 
 
     end
@@ -73,8 +72,12 @@ classdef Environment < handle
                                    obj.z_bnd(1) + rand()*(obj.z_bnd(2) - obj.z_bnd(1))];     
                 end
                 obj.positions(:,1,i) = random_position;
-                disp("agent "+i+" at pos: ");
-                random_position
+                ai = Agent(random_position);
+                if i == 1
+                    obj.agents = [ai];
+                else
+                    obj.agents(i) = ai;
+                end
 
             end
 
@@ -124,45 +127,158 @@ classdef Environment < handle
         % trajectory planning
         function obj = planTrajectories(obj)
             [obj.interval, obj.trajectories] = planningProblem(obj);
+            for a=1:obj.n_agents
+                obj.agents(a).updateReference(obj.trajectories(:,:,a), obj.interval);
+            end
         end
 
 
         function obj = sim(obj)
-            disp("sim")
-            obj.t = 0;
-            % plan the first trajectories
+            X = [];
+            T = [];
+            obj.RLSStep();
             obj.planTrajectories();
-            last_replan = 0;
-            
-            samples = 0;
-
-            for t=linspace(0, obj.T, obj.T/obj.dt)
-                obj.t = t;
-
-                % check if we have a new ARTVA sample
-                if (floor(t/obj.tau) >= samples)
-                    samples = samples+1;
-                    % refine the estimation
-                    obj.RLSStep();
-                    %pause();
-                end
-
-                % if conditions are met replan
-                if t - last_replan > obj.t_bar || t > obj.interval(end)
-                    disp("replanning at " + t)
-                    obj.planTrajectories();
-                    last_replan = t;
-                end
 
 
-                % update position of agents
-                for a=1:obj.n_agents
-                    obj.positions(:,1,a) = ...
-                        deCasteljau(obj.trajectories(:,:,a), t, obj.interval);
-                end
-                
+            % set up the events
+            options = odeset("Events", @(t, y) obj.eventsFcn(t, y));
+
+            % build the initial condition vector
+            sz = 2*obj.dim;
+            start_ = 1;
+            for a=1:obj.n_agents
+                agent = obj.agents(a);
+                %
+                x0(start_:start_+sz-1) = agent.x;
+                %
+                start_ = start_ + sz;
             end
+            
+            exit = false;
+            while ~exit
+                disp("Integrating from "+ obj.t + " to " +obj.interval(end));
+                [t, x, te, xe, ie] = ode45(@(t,x) obj.f(t,x), [obj.t, obj.interval(end)], x0, options);
+                X = [X; x];
+                T = [T; t];
+               
+                disp("stopped at " + te);
+                % replace x0 and obj.t accordingly to restart the integration
+                % from where it stopped
 
+                if isempty(te)
+                    % no events...
+                    disp("No events..")
+                    obj.t = t(end);
+                    x0 = x(end,:);
+
+                else % event
+                    % we set obj.position so we apply the updates
+                    % at the correct position
+                    sz = 2*obj.dim;
+                    start_ = 1;
+                    for a=1:obj.n_agents
+                        %
+                        obj.positions(:,:,a) = x(end,start_:start_+1);
+                        %
+                        start_ = start_ + sz;
+                    end
+                    if ie == 1
+                        x0 = xe;
+                        obj.t = te;
+                        % do RLS...
+                        obj.RLSStep();
+                        %
+                        obj.last_sample = te;
+                    elseif ie == 2
+                        x0 = xe;
+                        t = te;
+                        % do replanning...
+                        obj.planTrajectories();
+                        %
+                        obj.last_replan = te;
+                    else
+                        % this should not happen
+                        error("what?")
+                    end
+                end
+                exit = t(end) > 100;
+            end
+            
+            % TODO move this away
+            % plot the positions of the agents in time
+            f = figure();
+            if obj.dim == 2
+                scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o", 'LineWidth', 2); hold on
+            else
+                error("cannot plot 3d yet")
+            end
+            sz = 2*obj.dim;
+            start_ = 1;
+            for a=1:obj.n_agents
+                agent = obj.agents(a);
+                %
+                if obj.dim == 2
+                    plot(X(:,start_), X(:,start_+1),"b"); hold on;
+                else
+                    error("cannot plot 3d yet")
+                end
+                pause()
+                %
+                start_ = start_ + sz;
+            end
+        end
+
+        % this function is the dynamic equations of
+        % all the agents
+        function xdot = f(obj, t, x)
+            xdot = zeros(obj.n_agents*2*obj.dim + 0, 1);
+            sz = 2*obj.dim;
+            start_ = 1;
+
+            for a=1:obj.n_agents
+                agent = obj.agents(a);
+                %
+                xdot(start_:start_+sz-1) = agent.cl_dyn(t, x(start_:start_+sz-1));
+                %
+                start_ = start_ + sz;
+            end
+            % this is where you would add consensus on
+            % the individual agent estimates
+            % by allocating space on xdot (now there is a "+0")
+            % it should look something like 
+            % x_dot(start_:end) = -L*x(start_:end)
+            %
+            %
+            %
+            %
+         
+        end
+        
+        % this function servers the purpose of telling ode45 
+        % that an event has occurred
+        % we are interested in two kinds of event:
+        % 1) new ARTVA sample (periodic)
+        % 2) replanning conditions
+        %
+        % From documentation:
+        % "If a terminal event occurs during the first step of the
+        % integration, then the solver registers the event as nonterminal and continues integrating."
+        function [value, isterminal, direction] = eventsFcn(obj, t, y)
+            
+            % new ARTVA signal?
+            value(1) = t - obj.last_sample > obj.tau;
+            % we want to stop the integration when this happens
+            isterminal = 1;
+
+            % TODO write better replanning conditions (like in paper2)
+            value(2) = (t - obj.last_replan > obj.t_bar) || ...
+                       t >= obj.interval(end);
+            % we want to stop the integration when this happens
+            isterminal(2) = 1;
+
+            % direction does not matter in our case
+            direction(1) = 0;
+            direction(2) = 0;
         end
     end
 end

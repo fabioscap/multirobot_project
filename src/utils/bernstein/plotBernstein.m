@@ -31,7 +31,7 @@ if dim == 2
     % plot(poly(1,:),poly(2,:), col)
     
     
-    plot(values(1,:),values(2,:));
+    plot(values(1,:),values(2,:), col);
     axis equal
 
 elseif dim == 1
