@@ -4,12 +4,10 @@ classdef Environment < handle
     
     properties
         dim
-        dim_x
-
+        
         N % the number of agents
         p_t % the pose of the target (unknown to agents)
-        x % the unknown vector x (see references)
-        p_hat % the current estimate of the target
+        
         x_bnd = [-20; 20];
         y_bnd = [-20; 20];
         z_bnd = [-10; 10];
@@ -18,23 +16,16 @@ classdef Environment < handle
         n_agents
         agents = []
         trajectories
-        order = 4;
         positions
 
+        % ARTVA signal amplitude
+        m = 10
 
         tau % ARTVA sampling time
         last_sample = 0
-        m=10   % ARTVA amplitude
-        
-        % coefficients for the approximation of the output
-        ab = eq8(200); 
 
-        % TODO validate these parameters
-        % initializer for the S matrix in RLS
-        S ;
-        % forgetting factor
-        beta = 0.8;
-
+        % instance that holds the target estimate
+        estimate
 
         % simulation parameters
         t=0
@@ -58,7 +49,6 @@ classdef Environment < handle
             obj.n_agents = N;
             obj.p_t = p_t;
 
-            obj.trajectories = zeros(dim, obj.order+1, obj.n_agents);
             obj.positions    = zeros(dim , 1, obj.n_agents);
             for i=1:obj.n_agents
                 % TODO define other initialization methods for the agent
@@ -83,50 +73,26 @@ classdef Environment < handle
 
             obj.tau = tau;
 
-            if dim == 2
-                obj.dim_x = 6;
-                obj.x = [obj.m 0 obj.m -1 1 0]';
-            elseif dim == 3
-                obj.dim_x = 10;
-                obj.x = [obj.m 0 0 obj.m 0 obj.m 0 0 0 0]';
-            end
-            obj.S =0.1* eye(obj.dim_x, obj.dim_x);
-
-            obj.p_hat = zeros(dim, 1);
+            obj.estimate = Estimate(dim, obj.m);
 
         end
         
         % RLS recursive step (eq. 5)
-        function obj = RLSStep(obj)
-            % we update the estimate of the unknown vector x
-            % this has to be called whenever we receive 
-            % a new ARTVA sample
-            Y = zeros(obj.n_agents,1);
-            H = zeros(obj.dim_x, obj.n_agents);
+        function obj = updateEstimate(obj)
+            sig_norms = zeros(obj.n_agents,1);
             for i=1:obj.n_agents
                 p = obj.positions(:,1,i);
-
-                % collect the individual measurements for each agent
-                % TODO set noise to true
-                sig_norm = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
-                % construct the output
-                Y(i) = ( (obj.m/(sig_norm*4*pi))^(2/3) )* (obj.ab(1)*obj.ab(2))^2;
-                % build phi vector
-                H(:,i) = buildPhi(p);
+                sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
             end
-
-            K = obj.S * H /( obj.beta*eye(obj.n_agents, obj.n_agents) + H'*obj.S*H) ;
-            obj.x = obj.x + K *(Y - H'*obj.x);
-            obj.S = (1/obj.beta) * (obj.S - K*H'*obj.S);
-
-            obj.p_hat = extractTarget(obj.x, obj.ab(1), obj.ab(2));
-
-            obj.p_hat
+            obj.estimate.RLSStep(obj.positions, sig_norms);
         end
 
         % trajectory planning
         function obj = planTrajectories(obj)
-            [obj.interval, obj.trajectories] = planningProblem(obj);
+            [obj.interval, obj.trajectories] = planningProblem(obj.positions, ...
+                                                               obj.t, ...
+                                                               obj.estimate.value, ...
+                                                               obj.tau);
             for a=1:obj.n_agents
                 obj.agents(a).updateReference(obj.trajectories(:,:,a), obj.interval);
             end
@@ -136,7 +102,9 @@ classdef Environment < handle
         function obj = sim(obj)
             X = [];
             T = [];
-            obj.RLSStep();
+            obj.updateEstimate();
+
+            obj.estimate.value
             obj.planTrajectories();
 
 
@@ -186,7 +154,7 @@ classdef Environment < handle
                         x0 = xe;
                         obj.t = te;
                         % do RLS...
-                        obj.RLSStep();
+                        obj.updateEstimate();
                         %
                         obj.last_sample = te;
                     elseif ie == 2
@@ -201,7 +169,7 @@ classdef Environment < handle
                         error("what?")
                     end
                 end
-                exit = t(end) > 100;
+                exit = t(end) > 50;
             end
             
             % TODO move this away
