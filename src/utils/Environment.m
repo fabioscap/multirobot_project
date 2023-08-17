@@ -37,6 +37,8 @@ classdef Environment < handle
         t_bar = 10;
         last_replan = 0
 
+        % centralized agent does not need this
+        extr_dim = 0
 
     end
     
@@ -198,8 +200,8 @@ classdef Environment < handle
 
         % this function is the dynamic equations of
         % all the agents
-        function xdot = f(obj, t, x)
-            xdot = zeros(obj.n_agents*2*obj.dim + 0, 1);
+        function [xdot, start_] = f(obj, t, x)
+            xdot = zeros(obj.n_agents*2*obj.dim + obj.extr_dim, 1);
             sz = 2*obj.dim;
             start_ = 1;
 
@@ -210,15 +212,7 @@ classdef Environment < handle
                 %
                 start_ = start_ + sz;
             end
-            % this is where you would add consensus on
-            % the individual agent estimates
-            % by allocating space on xdot (now there is a "+0")
-            % it should look something like 
-            % x_dot(start_:end) = -L*x(start_:end)
-            %
-            %
-            %
-            %
+
          
         end
         
@@ -231,6 +225,9 @@ classdef Environment < handle
         % From documentation:
         % "If a terminal event occurs during the first step of the
         % integration, then the solver registers the event as nonterminal and continues integrating."
+
+        % we shall not change the state of the environment here because it
+        % gets called arbitrarily many times
         function [value, isterminal, direction] = eventsFcn(obj, t, y)
             
             % new ARTVA signal?

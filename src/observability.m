@@ -11,12 +11,12 @@ syms t
 assume(t,"real");
 
 % 8 shape
-x = 0.5*sin(2*pi*t);
-y = 0.5*sin(4*pi*t);
+% x = 0.5*sin(2*pi*t);
+% y = 0.5*sin(4*pi*t);
 
 % ellipses
-%x = 0.5*sin(2*pi*t);
-%y = 0.2*cos(2*pi*t);
+x = 0.5*sin(2*pi*t);
+y = 0.2*cos(2*pi*t);
 
 P = [x+3 y-3; x-3 y+3; x+3 y+3; x-3 y-3]';
 n_agents = size(P,2);
