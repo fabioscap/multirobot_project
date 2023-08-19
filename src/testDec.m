@@ -16,5 +16,5 @@ n_agents = 4;
 % agents receive samples at discrete intervals
 tau = 0.5;
 
-e = Environment(dim, n_agents, p_t, tau);
+e = EnvironmentDec(dim, n_agents, p_t, tau);
 e.sim();
