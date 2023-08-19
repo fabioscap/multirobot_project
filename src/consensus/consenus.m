@@ -32,8 +32,8 @@ n_agents = 5;
 tau = 0.5;
 
 %Gains values
-Kp = 1;
-Kd = 1;
+Kp = 100;
+Kd = 100;
 
 e = Environment2(dim, n_agents, p_t, tau);
 
@@ -131,9 +131,9 @@ syms x1 y1 x2 y2 x3 y3 x4 y4 x5 y5 xd1 yd1 xd2 yd2 xd3 yd3 xd4 yd4 xd5 yd5 real
  x = [x1,y1,x2,y2,x3,y3,x4,y4,x5,y5,...
      xd1,yd1,xd2,yd2,xd3,yd3,xd4,yd4,xd5,yd5,...
      px_1,py_1,px_2,py_2,px_3,py_3,px_4,py_4,px_5,py_5]';
- %Let's create a comfortable structure to call elements of L
- L_vector = zeros(2*(length(L)^2),1);
- appoggio = reshape(L,length(L)^2,1);
+%%Let's create a comfortable structure to call elements of L
+%L_vector = zeros(2*(length(L)^2),1);
+%appoggio = reshape(L,length(L)^2,1);
 %  for k = 1:length(L)^2
 %      L_vector((k*2)-1) = appoggio(k);
 %      L_vector(k*2) =appoggio(k) ;
@@ -167,38 +167,52 @@ end
 
 
 M(n_entries+1:2*n_entries, 2*n_entries+1:end) = ...
-    M(n_entries+1:2*n_entries, 2*n_entries+1:end) +L_net;
+    M(n_entries+1:2*n_entries, 2*n_entries+1:end) -L_net;
 
 M(2*n_entries+1:end, 2*n_entries+1:end) =...
-    M(2*n_entries+1:end, 2*n_entries+1:end) +L_net;
+    M(2*n_entries+1:end, 2*n_entries+1:end) -L_net;
 
 %Build x_0 for ode45
 x_0 = zeros(length(x),1);
 for s=1:(vv/2) %this should be 30/2 = 15
 
     if s<(n_agents+1) % This fill the first 10 entries of x_dot
-        x_0((s*2)-1) = e.agents(round(s/2)).x(1);
-        x_0(s*2) = e.agents(round(s/2)).x(2);
-    elseif s<(2*n_agents +1) %This fill the second 10 entries of x_dot
-        x_0((s*2)-1) = e.agents(round((s-n_agents)/2)).x(3);
-        x_0(s*2) = e.agents(round((s-n_agents)/2)).x(4);
-    else
-        x_0((s*2)-1) = e.p_hat(1,s-n_entries);
-        x_0(s*2) = e.p_hat(2,s-n_entries);
+        x_0((s*2)-1) = e.agents(s).x(1);
+        x_0(s*2) = e.agents(s).x(2);
+     elseif s<(2*n_agents +1) %This fill the second 10 entries of x_dot
+         x_0((s*2)-1) = e.agents(round((s-n_agents)/2)).x(3);
+         x_0(s*2) = e.agents(round((s-n_agents)/2)).x(4);
+     else
+         x_0((s*2)-1) = e.p_hat(1,s-n_entries);
+         x_0(s*2) = e.p_hat(2,s-n_entries);
+%      else    %THIS IS A TEST,in which we pass the real target location
+%           x_0((s*2)-1) = e.p_t(1);
+%           x_0(s*2) = e.p_t(2);
     end
 end
 
 
 
-t_interval =[0,1.5];
+t_interval =[0,5];
 x_dot = @(t,x) M*x;
 
 [t,x] = ode45(x_dot,t_interval,x_0);
 
-figure,
+figure();
 hold on
-for i=1:5
-    plot(x(:,i*2 -1),x(:,i*2))
+% for i=1:5
+%     plot(x(:,i*2 -1),x(:,i*2))
+% end
+% hold off
+% legend('agente1','agente2','agente3','agente4','agente5')
+for i =1:n_entries
+    if mod(i,2)==0
+       plot(t,x(:,i),'Color',[0.8500 0.3250 0.0980])
+    else
+       plot(t,x(:,i),'Color',[0 0.4470 0.7410]) 
+    end
 end
-hold off
-legend('agente1','agente2','agente3','agente4','agente5')
+plot(t_interval,[e.p_t(1),e.p_t(1)],'Color',[0 0.4470 0.7410], "LineWidth",2)
+plot(t_interval,[e.p_t(2),e.p_t(2)],'Color',[0.8500 0.3250 0.0980], "LineWidth",2)
+% legend('agente1_x','agente1_y','agente2_x','agente2_y','agente3_x',...
+%     'agente3_y','agente4_x','agente4_y','agente5_x','agente5_y')
