@@ -16,7 +16,7 @@ classdef Estimate < handle
         % RLS parameters
         S ;
         % forgetting factor
-        beta = 0.8;
+        beta = 0.99;
 
     end
     

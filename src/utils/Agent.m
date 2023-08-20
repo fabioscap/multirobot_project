@@ -10,6 +10,7 @@ classdef Agent < handle
     
     properties
         dim
+        dyn_size
         cl_dyn
         x
         % reference trajectories and derivatives
@@ -28,7 +29,9 @@ classdef Agent < handle
             obj.x(1:obj.dim) = x0;
             obj.x(obj.dim+1:end) = 0;
 
-            obj.cl_dyn = @(t,x) doubleInt(t, x, obj.PDffw(t, x));
+            % position and velocity
+            obj.dyn_size = 2;
+            obj.cl_dyn = @(t,x) doubleInt(t, x, obj.PDffwBrt(t, x));
 
         end
         
@@ -42,8 +45,10 @@ classdef Agent < handle
             obj.pdd = pdd_;
         end
 
-        function u = PDffw(obj, t, x)
-            % the controller
+        % a controller that follows a bernstein polynomial
+        % trajectory through PD + ffw
+        function u = PDffwBrt(obj, t, x)
+            
             Kp = 100;
             Kd = 10;
             

@@ -15,6 +15,7 @@ classdef Environment < handle
         % agents
         n_agents
         agents = []
+        dyn_size
         trajectories
         positions
 
@@ -64,9 +65,10 @@ classdef Environment < handle
                                    obj.z_bnd(1) + rand()*(obj.z_bnd(2) - obj.z_bnd(1))];     
                 end
                 obj.positions(:,1,i) = random_position;
-                ai = Agent(random_position);
+                ai = AgentDec(random_position, obj.m);
                 if i == 1
                     obj.agents = [ai];
+                    obj.dyn_size = ai.dyn_size;
                 else
                     obj.agents(i) = ai;
                 end

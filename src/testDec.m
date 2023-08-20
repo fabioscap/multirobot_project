@@ -17,4 +17,4 @@ n_agents = 4;
 tau = 0.5;
 
 e = EnvironmentDec(dim, n_agents, p_t, tau);
-e.sim();
+[T, X] = e.sim();
