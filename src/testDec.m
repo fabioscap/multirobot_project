@@ -9,7 +9,7 @@ p_t = zeros(dim, 1);
 p_t = [10;20];
 
 % the number of agents
-n_agents = 4;
+n_agents = 5;
 
 
 % the sampling time for the ARTVA signal
