@@ -110,7 +110,7 @@ classdef EnvironmentDec < Environment
             end
 
 
-            total_sim_time = 300;
+            total_sim_time = 100;
             exit = false;
             while ~exit
                 disp("Integrating from "+ obj.t + " to " + total_sim_time);
@@ -178,7 +178,9 @@ classdef EnvironmentDec < Environment
                 agent = obj.agents(a);
                 %
                 if obj.dim == 2
-                    plot(X(:,start_), X(:,start_+1),"b"); hold on;
+                    plot(X(:,start_), X(:,start_+1),"b");
+                    plot(X(end,start_), X(end,start_+1),"r",'Marker','x','LineWidth',2)
+                    hold on;
                 else
                     error("cannot plot 3d yet")
                 end
@@ -186,7 +188,7 @@ classdef EnvironmentDec < Environment
                 %
                 start_ = start_ + sz;
             end
-
+            legend()
             % plot consensus evolution
             f=figure();
             for a=0:obj.n_agents-1
