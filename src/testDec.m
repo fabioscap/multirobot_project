@@ -1,12 +1,12 @@
 clear all; close all; clc; addpath(genpath(pwd));
 
-dim =2 ;
+dim =3;
 
 % the actual target pose (unknown to the agents)
 % [ x; y];
 p_t = zeros(dim, 1);
 
-p_t = [10;20];
+p_t = [10;20;5];
 
 % the number of agents
 n_agents = 5;

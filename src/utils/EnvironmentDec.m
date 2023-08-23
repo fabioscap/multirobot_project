@@ -105,12 +105,14 @@ classdef EnvironmentDec < Environment
                 %
                 start_ = start_ + sz;
 
-                x0(consensus_idx + obj.dyn_size*a+1:...
-                   consensus_idx + obj.dyn_size*(a+1)) = agent.estimate.value;
+                %x0(consensus_idx + obj.dyn_size*a+1:...
+                   %consensus_idx + obj.dyn_size*(a+1)) = agent.estimate.value;
+                x0(consensus_idx + obj.dim*a+1:...
+                   consensus_idx + obj.dim*(a+1)) = agent.estimate.value;
             end
 
 
-            total_sim_time = 100;
+            total_sim_time = 150;
             exit = false;
             while ~exit
                 disp("Integrating from "+ obj.t + " to " + total_sim_time);
@@ -138,7 +140,8 @@ classdef EnvironmentDec < Environment
                     start_ = 1;
                     for a=1:obj.n_agents
                         %
-                        obj.positions(:,:,a) = x(end,start_:start_+1);
+                        obj.positions(:,:,a) = x(end,start_:start_+...
+                            (obj.dim-1));
                         %
                         start_ = start_ + sz;
                     end
@@ -148,8 +151,8 @@ classdef EnvironmentDec < Environment
                         % do RLS...
                         obj.updateEstimate();
                         for a=0:obj.n_agents-1
-                            x0(consensus_idx + obj.dyn_size*a+1:...
-                               consensus_idx + obj.dyn_size*(a+1)) = agent.estimate.value;
+                            x0(consensus_idx + obj.dim*a+1:...
+                               consensus_idx + obj.dim*(a+1)) = agent.estimate.value;
                         end
                         %
                         obj.last_sample = te;
@@ -168,9 +171,13 @@ classdef EnvironmentDec < Environment
             % plot the positions of the agents in time
             f = figure();
             if obj.dim == 2
-                scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o", 'LineWidth', 2); hold on
+                scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o",...
+                    'LineWidth', 2); hold on
+            elseif obj.dim == 3
+                scatter3(obj.p_t(1),obj.p_t(2),obj.p_t(3),"cyan",...
+                    "Marker", "o", 'LineWidth', 2); hold on
             else
-                error("cannot plot 3d yet")
+                error("cannot plot this dimension")
             end
             sz = 2*obj.dim;
             start_ = 1;
@@ -180,6 +187,11 @@ classdef EnvironmentDec < Environment
                 if obj.dim == 2
                     plot(X(:,start_), X(:,start_+1),"b");
                     plot(X(end,start_), X(end,start_+1),"r",'Marker','x','LineWidth',2)
+                    hold on;
+                elseif obj.dim == 3
+                    plot3(X(:,start_), X(:,start_+1),X(:,start_+2),"b");
+                    plot3(X(end,start_),X(end,start_+1),X(end,start_+2),...
+                        "r",'Marker','x','LineWidth',2)
                     hold on;
                 else
                     error("cannot plot 3d yet")
@@ -195,9 +207,15 @@ classdef EnvironmentDec < Environment
                 agent = obj.agents(a+1);
                 %
                 if obj.dim == 2
-                    plot(T, X(:,consensus_idx+obj.dyn_size*a+1),'r'); hold on;
+                    plot(T, X(:,consensus_idx+obj.dyn_size+1),'r'); hold on;
                     plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),'c'); hold on;
-                    
+                    plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),'g'); hold on;
+                elseif obj.dim ==3
+                    plot(T, X(:,consensus_idx+obj.dim*a+1),'r'); hold on;
+                    plot(T, X(:,consensus_idx+obj.dim*a+2),'c'); hold on;
+                    plot(T, X(:,consensus_idx+obj.dim*a+3),'g'); hold on;
+                    legend('X','Y','Z')
+
                 else
                     error("cannot plot 3d yet")
                 end

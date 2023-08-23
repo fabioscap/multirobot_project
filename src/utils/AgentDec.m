@@ -19,9 +19,15 @@ classdef AgentDec < Agent
 
         % a PD + ffw controller
         function u = PDffw(obj, t, x, p, pd, pdd)
-            % the controller
-            Kp = 100;
-            Kd = 25;
+            % the controller( different values for either 2D or 3D)
+            if obj.dim ==2
+                Kp = 100;
+                Kd = 25;
+            elseif obj.dim ==3
+                Kp = 50;
+                Kd = 45;
+            end
+
             
             pos = x(1:obj.dim);
             vel = x(obj.dim+1:end);
