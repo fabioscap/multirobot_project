@@ -188,15 +188,15 @@ classdef EnvironmentDec < Environment
                 %
                 start_ = start_ + sz;
             end
-            legend()
             % plot consensus evolution
+            %lines = ["-r","-b","--r","--b","-.r","-.b",":r",":b","-xr","-xb"];
             f=figure();
             for a=0:obj.n_agents-1
                 agent = obj.agents(a+1);
                 %
                 if obj.dim == 2
-                    plot(T, X(:,consensus_idx+obj.dyn_size*a+1),"b"); hold on;
-                    plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),"r"); hold on;
+                    plot(T, X(:,consensus_idx+obj.dyn_size*a+1),'r'); hold on;
+                    plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),'c'); hold on;
                     
                 else
                     error("cannot plot 3d yet")

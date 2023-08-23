@@ -20,8 +20,8 @@ classdef AgentDec < Agent
         % a PD + ffw controller
         function u = PDffw(obj, t, x, p, pd, pdd)
             % the controller
-            Kp = 10;
-            Kd = 100;
+            Kp = 100;
+            Kd = 25;
             
             pos = x(1:obj.dim);
             vel = x(obj.dim+1:end);
