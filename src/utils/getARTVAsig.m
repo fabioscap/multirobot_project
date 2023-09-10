@@ -43,15 +43,12 @@ end
     %h_n = (m/(4*pi)) * ( (ab(1)^2*ab(2)^2) / ...
     %                    (  (p(1)*ab(2))^2 + (p(2)^2+p(3)^2)*ab(1)^2 ) ^(3/2));
 
-    % add noise
+
+
+    h_m_norm = norm(h_n);
     if noise
-        % TODO implement noise
-        error("not implemented");
-    else
-        h_m_norm = norm(h_n);
+        % h_m_ norm is around 1e-4~1e.5 (when amplitude is 1)
+        noise_std = 1e-6;
+        h_m_norm = h_m_norm + noise_std*randn(1);
     end
-
-    % maybe return directly the norm? it seems that
-    % they use ||h_m|| in the estimation process
 end
-
