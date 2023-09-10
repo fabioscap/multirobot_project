@@ -53,7 +53,7 @@ classdef EnvironmentDec < Environment
                 % references for the agent
                 p_target = x_cons(obj.dim*a + 1: obj.dim*(a+1));
                 pd_target = cons_action(obj.dim*a + 1: obj.dim*(a+1));
-                xdot(start_:start_+sz-1) = agent.ol_dyn(t, x(start_:start_+sz-1), ...
+                xdot(start_:start_+sz-1) = agent.cl_dyn(t, x(start_:start_+sz-1), ...
                     p_target, ...
                     pd_target, ...
                     zeros(obj.dim, 1)); % no feed forward
@@ -69,7 +69,9 @@ classdef EnvironmentDec < Environment
             sig_norms = zeros(obj.n_agents,1);
             for i=1:obj.n_agents
                 p = obj.positions(:,1,i);
-                sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
+                %sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
+                % try to set noise to true
+                sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), true, obj.m);
             end
 
             for i=1:obj.n_agents
@@ -83,10 +85,10 @@ classdef EnvironmentDec < Environment
             end
         end
 
-
         function [T, X] = sim(obj)
             X = [];
             T = [];
+            obj.t = 0;
             obj.updateEstimate();
 
             % set up the events
@@ -105,10 +107,10 @@ classdef EnvironmentDec < Environment
                 %
                 start_ = start_ + sz;
 
-                %x0(consensus_idx + obj.dyn_size*a+1:...
-                   %consensus_idx + obj.dyn_size*(a+1)) = agent.estimate.value;
                 x0(consensus_idx + obj.dim*a+1:...
                    consensus_idx + obj.dim*(a+1)) = agent.estimate.value;
+                %x0(consensus_idx + obj.dim_x*a+1:...
+                %  consensus_idx + obj.dim_x*(a+1)) = agent.estimate.x;
             end
 
 
@@ -136,7 +138,7 @@ classdef EnvironmentDec < Environment
                 else % event
                     % we set obj.position so we apply the updates
                     % at the correct position
-                    sz = 2*obj.dim;
+                    sz = obj.dyn_size*obj.dim;
                     start_ = 1;
                     for a=1:obj.n_agents
                         %
@@ -149,6 +151,11 @@ classdef EnvironmentDec < Environment
                         x0 = xe;
                         obj.t = te;
                         % do RLS...
+                        %for a=0:obj.n_agents-1
+                        %    agent = obj.agents(a+1);
+                        %    agent.estimate.x = x0(consensus_idx + obj.dim_x*a+1:...
+                        %                          consensus_idx + obj.dim_x*(a+1))';
+                        %end
                         obj.updateEstimate();
                         for a=0:obj.n_agents-1
                             agent = obj.agents(a+1);
@@ -194,8 +201,6 @@ classdef EnvironmentDec < Environment
                     plot3(X(end,start_),X(end,start_+1),X(end,start_+2),...
                         "r",'Marker','x','LineWidth',2)
                     hold on;
-                else
-                    error("cannot plot 3d yet")
                 end
 
                 %
@@ -207,14 +212,18 @@ classdef EnvironmentDec < Environment
             for a=0:obj.n_agents-1
                 agent = obj.agents(a+1);
                 %
+                % estimate_block = X(:,consensus_idx+obj.dim_x*a + 1: ...
+                %                     consensus_idx+obj.dim_x*(a+1));
+                %target_history = cell2mat(arrayfun(...
+                %                 @(row) extractTarget(estimate_block(row,:), obj.ab(1),obj.ab(2)), ...
+                %                 1:size(estimate_block,1), 'UniformOutput', false));
                 if obj.dim == 2
-                    plot(T, X(:,consensus_idx+obj.dyn_size+1),'r'); hold on;
-                    plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),'c'); hold on;
-                    plot(T, X(:,consensus_idx+obj.dyn_size*(a+1)),'g'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 0),'r'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 1),'b'); hold on;
                 elseif obj.dim ==3
-                    plot(T, X(:,consensus_idx+obj.dim*a+1),'r'); hold on;
-                    plot(T, X(:,consensus_idx+obj.dim*a+2),'c'); hold on;
-                    plot(T, X(:,consensus_idx+obj.dim*a+3),'g'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 0),'r'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 1),'g'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 2),'b'); hold on;
                     legend('X','Y','Z')
 
                 else
@@ -234,8 +243,6 @@ classdef EnvironmentDec < Environment
             isterminal = 1;
             % direction does not matter in our case
             direction(1) = 0;
-
-            % TODO check if an agents wants to stop the integration
         end
     end
     

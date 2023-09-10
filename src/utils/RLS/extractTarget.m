@@ -12,32 +12,34 @@ function target = extractTarget(x, a, b)
              x(2) x(3)];
         y = [x(4); x(5)];
     else
-        error("unknown x dimension");
+        error("unknown x dimension " + length(x));
     end
     % clamp the singular values to have a
     % consistent estimate (paper 1)
 
     % this makes 
-    % M = saturateSValues(M, a^2, b^2);
+    %M = saturateSValues(M, a^2, b^2);
 
     target = M\y;
 end
 
-function S_hat = saturateSValues(S,s1,s2,k)
+function M_bar = saturateSValues(M,s1,s2,k)
     arguments
-       S
+       M
        s1
        s2
        k=1.0 % tolerance factor >=1(?)
     end
+    [U, S, V] = svd(M);
     ub = k * max(s1, s2);
     lb = min(s1, s2) / k;
-    S_hat = zeros(size(S,1), size(S,2));
-   
+    S_bar = zeros(size(S,1), size(S,2));
+
     for i=1:length(diag(S))
-        S_hat = clamp(S(i,i), lb, ub);
+        S_bar(i,i) = clamp(S(i,i), lb, ub);
     end
 
+    M_bar = U*S_bar*V';
 
 end
 

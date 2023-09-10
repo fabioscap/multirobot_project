@@ -31,6 +31,8 @@ classdef Environment < handle
         % simulation parameters
         t=0
         
+        dim_x
+
         % trajectory interval (you get this from solving opt problem)
         interval
 
@@ -41,6 +43,8 @@ classdef Environment < handle
         % centralized agent does not need this
         extr_dim = 0
 
+
+        ab = eq8(200);
     end
     
     methods
@@ -48,7 +52,11 @@ classdef Environment < handle
             %ENVIRONMENT Constructor
 
             obj.dim = dim;
-
+            if dim == 2
+                obj.dim_x = 6;
+            elseif dim == 3
+                obj.dim_x = 10;
+            end
             obj.n_agents = N;
             obj.p_t = p_t;
 
@@ -65,7 +73,7 @@ classdef Environment < handle
                                    obj.z_bnd(1) + rand()*(obj.z_bnd(2) - obj.z_bnd(1))];     
                 end
                 obj.positions(:,1,i) = random_position;
-                ai = AgentDec(random_position, obj.m);
+                ai = AgentDec(random_position, obj.m, tau);
                 if i == 1
                     obj.agents = [ai];
                     obj.dyn_size = ai.dyn_size;

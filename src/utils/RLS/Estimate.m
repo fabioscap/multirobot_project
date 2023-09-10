@@ -31,7 +31,7 @@ classdef Estimate < handle
                 obj.dim_x = 10;
                 obj.x = [1 0 0 1 0 1 0 0 0 0]';
             end
-            obj.S = 100* eye(obj.dim_x, obj.dim_x);
+            obj.S = 5* eye(obj.dim_x, obj.dim_x);
 
         end
         % RLS recursive step (eq. 5)
@@ -48,30 +48,24 @@ classdef Estimate < handle
             for i=1:n_agents
                 p = positions(:,1,i);
                 % construct the output
+         
                 Y(i) = ( (obj.m/(sig_norms(i)*4*pi))^(2/3) )* (obj.ab(1)*obj.ab(2))^2;
                 % build phi vector
                 H(:,i) = buildPhi(p);
             end
-            
             error_term = Y - H'*obj.x;
+            Q = H'*obj.S*H;
+            K = (obj.S * H )/ ( obj.beta*eye(n_agents, n_agents) + Q) ;
+            obj.x = obj.x + K *(error_term);            
 
-            K = (obj.S * H )/ ( (1e-3)*eye(n_agents, n_agents) + H'*obj.S*H) ;
-            obj.x = obj.x + K *(error_term);
-            
-            % apparently this term becomes singular and makes the
-            % covariance explode through exploding K
-            % disp("det(H'*obj.S*H) " + det(H'*obj.S*H))
-            % solving the problem by premultiplying KH'S by beta
-            obj.S = (1/obj.beta) * (obj.S - obj.beta*K*H'*obj.S);
+            obj.S = (1/obj.beta) * (obj.S - K*H'*obj.S);
 
             obj.value = extractTarget(obj.x, obj.ab(1), obj.ab(2));
-
             obj.value
 
-            disp("max(svd(K))     " + max(svd(K)))
-            disp("max(svd(H'))    " + max(svd(H')))
-            disp("det(obj.S)      " + det(obj.S))
-            pause()
+            if real(obj.value) ~= obj.value
+                error("aosdasd")
+            end
         end
  
     end

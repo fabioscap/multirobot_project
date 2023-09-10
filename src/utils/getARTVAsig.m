@@ -45,10 +45,10 @@ end
 
 
 
-    h_m_norm = norm(h_n);
     if noise
-        % h_m_ norm is around 1e-4~1e.5 (when amplitude is 1)
-        noise_std = 1e-6;
-        h_m_norm = h_m_norm + noise_std*randn(1);
+        noise_std = 4*1e-6;
+        h_m_norm = norm(h_n +noise_std*randn(size(h_n)));
+    else
+        h_m_norm = norm(h_n);
     end
 end
