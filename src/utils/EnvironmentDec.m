@@ -151,7 +151,7 @@ classdef EnvironmentDec < Environment
                         % do RLS...
                         obj.updateEstimate();
                         for a=0:obj.n_agents-1
-                            agent = obj.agents(a);
+                            agent = obj.agents(a+1);
                             x0(consensus_idx + obj.dim*a+1:...
                                consensus_idx + obj.dim*(a+1)) = agent.estimate.value;
                         end
