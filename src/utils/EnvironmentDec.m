@@ -193,10 +193,15 @@ classdef EnvironmentDec < Environment
                 agent = obj.agents(a);
                 %
                 if obj.dim == 2
+                    plot(X(1,start_), X(1,start_+1),"g",'Marker','>',...
+                        'LineWidth',1);
                     plot(X(:,start_), X(:,start_+1),"b");
-                    plot(X(end,start_), X(end,start_+1),"r",'Marker','x','LineWidth',2)
+                    plot(X(end,start_), X(end,start_+1),"r",'Marker',...
+                        'x','LineWidth',2)
                     hold on;
                 elseif obj.dim == 3
+                    plot3(X(1,start_), X(1,start_+1),X(1,start_+2),"g",...
+                        'Marker','>','LineWidth',1);
                     plot3(X(:,start_), X(:,start_+1),X(:,start_+2),"b");
                     plot3(X(end,start_),X(end,start_+1),X(end,start_+2),...
                         "r",'Marker','x','LineWidth',2)
@@ -220,10 +225,15 @@ classdef EnvironmentDec < Environment
                 if obj.dim == 2
                     plot(T, X(:,consensus_idx + 1 + obj.dim*a + 0),'r'); hold on;
                     plot(T, X(:,consensus_idx + 1 + obj.dim*a + 1),'b'); hold on;
+                    plot(T(end),obj.p_t(1),"r",'Marker','x','LineWidth',2)
+                    plot(T(end),obj.p_t(2),"b",'Marker','x','LineWidth',2)
                 elseif obj.dim ==3
                     plot(T, X(:,consensus_idx + 1 + obj.dim*a + 0),'r'); hold on;
-                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 1),'g'); hold on;
-                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 2),'b'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 1),'b'); hold on;
+                    plot(T, X(:,consensus_idx + 1 + obj.dim*a + 2),'g'); hold on;
+                    plot(T(end),obj.p_t(1),"r",'Marker','x','LineWidth',2)
+                    plot(T(end),obj.p_t(2),"b",'Marker','x','LineWidth',2)
+                    plot(T(end),obj.p_t(3),"g",'Marker','x','LineWidth',2)
                     legend('X','Y','Z')
 
                 else

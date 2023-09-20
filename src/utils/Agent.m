@@ -36,6 +36,7 @@ classdef Agent < handle
         end
         
         function obj = updateReference(obj, p, int)
+            obj.cl_dyn = @(t,x) doubleInt(t, x, obj.PDffwBrt(t, x));
             % precompute the derivatives for efficiency
             obj.int = int;
             obj.p = p;
