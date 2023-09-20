@@ -46,7 +46,7 @@ end
 
 
     if noise
-        noise_std = 4*1e-6;
+        noise_std = 1*1e-6;
         h_m_norm = norm(h_n +noise_std*randn(size(h_n)));
     else
         h_m_norm = norm(h_n);
