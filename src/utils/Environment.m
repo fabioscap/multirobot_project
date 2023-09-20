@@ -94,7 +94,7 @@ classdef Environment < handle
             sig_norms = zeros(obj.n_agents,1);
             for i=1:obj.n_agents
                 p = obj.positions(:,1,i);
-                sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), false, obj.m);
+                sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), true, obj.m);
             end
             obj.estimate.RLSStep(obj.positions, sig_norms);
         end
