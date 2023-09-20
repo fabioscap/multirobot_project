@@ -15,9 +15,9 @@ classdef AgentDec < Agent
             
             obj.tau = tau;
 
-            obj.cl_dyn = @(t,x,p, pd, pdd) doubleInt(t, x, obj.PDffw(t, x, p, ...
-                                                                pd, ...
-                                                                pdd));
+            % obj.cl_dyn = @(t,x,p, pd, pdd) doubleInt(t, x, obj.PDffw(t, x, p, ...
+            %                                                     pd, ...
+            %                                                     pdd));
         end
 
         % a PD + ffw controller
@@ -44,6 +44,14 @@ classdef AgentDec < Agent
         % and the neighbors'
         function obj = updateEstimate(obj, P, Y)
             obj.estimate.RLSStep(P, Y);
+        end
+
+        function obj = planTrajectory(obj, position, time)
+            [interval, traj] = planningProblem(position, time, obj.estimate.value, obj.tau);
+            obj.updateReference(traj, interval);
+            
+            interval
+            size(traj)
         end
     end
 end

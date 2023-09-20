@@ -53,10 +53,7 @@ classdef EnvironmentDec < Environment
                 % references for the agent
                 p_target = x_cons(obj.dim*a + 1: obj.dim*(a+1));
                 pd_target = cons_action(obj.dim*a + 1: obj.dim*(a+1));
-                xdot(start_:start_+sz-1) = agent.cl_dyn(t, x(start_:start_+sz-1), ...
-                    p_target, ...
-                    pd_target, ...
-                    zeros(obj.dim, 1)); % no feed forward
+                xdot(start_:start_+sz-1) = agent.cl_dyn(t, x(start_:start_+sz-1)); % no feed forward
                 %
                 start_ = start_ + sz;
             end
@@ -85,11 +82,27 @@ classdef EnvironmentDec < Environment
             end
         end
 
+        function obj = planTrajectories(obj)
+            min_duration = inf;
+            for a = 1:obj.n_agents
+                agent = obj.agents(a);
+                agent.planTrajectory(obj.positions(:,:,a),obj.t)
+                
+                % fetch the minimum duration of the trajectories
+                if agent.int(end) < min_duration
+                    min_duration = agent.int(end);
+                end
+            end
+            obj.interval = [obj.t, min_duration];
+        end
+
         function [T, X] = sim(obj)
             X = [];
             T = [];
             obj.t = 0;
             obj.updateEstimate();
+
+            obj.planTrajectories();
 
             % set up the events
             options = odeset("Events", @(t, y) obj.eventsFcn(t, y));
@@ -138,6 +151,7 @@ classdef EnvironmentDec < Environment
                 else % event
                     % we set obj.position so we apply the updates
                     % at the correct position
+                    obj.t = te;
                     sz = obj.dyn_size*obj.dim;
                     start_ = 1;
                     for a=1:obj.n_agents
@@ -149,7 +163,6 @@ classdef EnvironmentDec < Environment
                     end
                     if ie == 1
                         x0 = xe;
-                        obj.t = te;
                         % do RLS...
                         %for a=0:obj.n_agents-1
                         %    agent = obj.agents(a+1);
@@ -164,6 +177,9 @@ classdef EnvironmentDec < Environment
                         end
                         %
                         obj.last_sample = te;
+                    elseif ie==2
+   
+                        obj.planTrajectories();
                     else
                         % this should not happen
                         error("what?")
@@ -253,6 +269,14 @@ classdef EnvironmentDec < Environment
             isterminal = 1;
             % direction does not matter in our case
             direction(1) = 0;
+
+                        % TODO write better replanning conditions (like in paper2)
+            value(2) = (t - obj.last_replan > obj.t_bar) || ...
+                       t >= obj.interval(end);
+            % we want to stop the integration when this happens
+            isterminal(2) = 1;
+
+            direction(2) = 0;
         end
     end
     

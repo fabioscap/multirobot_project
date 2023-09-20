@@ -9,7 +9,7 @@ dim =2;
 % [ x; y];
 p_t = zeros(dim, 1);
 
-p_t = [10;-10];
+p_t = [20;-10];
 
 % the number of agents
 n_agents = 5;

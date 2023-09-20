@@ -1,12 +1,14 @@
 % inverse mapping to get p_hat back from x
 function target = extractTarget(x, a, b)
     if length(x) == 10
+        dim = 3;
         % x is (m11, m12, m13, m22, m23, m33, p1, p2, p3, d)
         M = [x(1) x(2) x(3);
              x(2) x(4) x(5);
              x(3) x(5) x(6)];
         y = [x(7);x(8);x(9)];
     elseif length(x) == 6 
+        dim=2;
         % x is (m11, m12, m22, p1, p2, d)
         M = [x(1) x(2);
              x(2) x(3)];
@@ -18,7 +20,14 @@ function target = extractTarget(x, a, b)
     % consistent estimate (paper 1)
 
     % this makes 
-    %M = saturateSValues(M, a^2, b^2);
+    % M = saturateSValues(M, a^2, b^2);
+    [U, S, V] = svd(M);
+    if dim==2
+        S_bar = diag([a^2;b^2]);
+    elseif dim == 3
+        S_bar = diag([a^2;b^2;b^2]);
+    end
+    %M = U*S_bar*V';
 
     target = M\y;
 end

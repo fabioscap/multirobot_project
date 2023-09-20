@@ -64,10 +64,15 @@ classdef Estimate < handle
             obj.value
 
             if real(obj.value) ~= obj.value
-                error("aosdasd")
+                error("complex number appeared")
             end
         end
  
+        function obj = bootstrap(obj,value) 
+            % to fuse consensus
+
+        end
+
     end
 end
 

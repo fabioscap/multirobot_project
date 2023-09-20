@@ -55,10 +55,15 @@ classdef Agent < handle
             
             pos = x(1:obj.dim);
             vel = x(obj.dim+1:end);
-
+            if t>=obj.int(1) && t <= obj.int(end)
             u = Kp*(deCasteljau(obj.p, t, obj.int)-pos) + ...
                 Kd*(deCasteljau(obj.pd,t, obj.int)-vel) + ...
                 deCasteljau(obj.pdd, t, obj.int);
+            else 
+            u = Kp*(deCasteljau(obj.p, obj.int(end), obj.int)-pos) + ...
+                Kd*(0-vel) + ...
+                0;
+            end
         end
     end
 end
