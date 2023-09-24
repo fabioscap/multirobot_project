@@ -27,7 +27,8 @@ classdef Environment < handle
 
         % instance that holds the target estimate
         estimate
-
+        estimate_history = []
+        
         % simulation parameters
         t=0
         
@@ -97,6 +98,8 @@ classdef Environment < handle
                 sig_norms(i) = getARTVAsig(p, obj.p_t, eye(3), eye(3), true, obj.m);
             end
             obj.estimate.RLSStep(obj.positions, sig_norms);
+
+            obj.estimate_history = [obj.estimate_history; [obj.t obj.estimate.value']];
         end
 
         % trajectory planning
@@ -187,6 +190,7 @@ classdef Environment < handle
             % TODO move this away
             % plot the positions of the agents in time
             f = figure();
+
             if obj.dim == 2
                 scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o", 'LineWidth', 2); hold on
             else
@@ -202,10 +206,18 @@ classdef Environment < handle
                 else
                     error("cannot plot 3d yet")
                 end
-                pause()
                 %
                 start_ = start_ + sz;
             end
+            figure()
+            if obj.dim == 2
+                plot(obj.estimate_history(:,1), obj.estimate_history(:,2),"r"); hold on;
+                plot(obj.estimate_history(:,1), obj.estimate_history(:,3),"g");
+            elseif obj.dim == 3
+                plot(obj.estimate_history(:,1), obj.estimate_history(:,2),"r");hold on;
+                plot(obj.estimate_history(:,1), obj.estimate_history(:,3),"g");hold on;
+                plot(obj.estimate_history(:,1), obj.estimate_history(:,4),"b");hold on;
+            end    
         end
 
         % this function is the dynamic equations of
