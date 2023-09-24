@@ -16,7 +16,7 @@ classdef EnvironmentDec < Environment
             obj.extr_dim = obj.extr_dim + obj.dim *obj.n_agents;
             
             % we need to define a connection for the agents
-            obj.A = circleConnection(obj.n_agents);
+            obj.A = starConnection(obj.n_agents);
             obj.L = adj2laplacian(obj.A);
             obj.L_expanded = expandLaplacian(obj.L, obj.dim);
         end

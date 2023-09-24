@@ -159,11 +159,20 @@ classdef Environment < handle
                     % at the correct position
                     sz = 2*obj.dim;
                     start_ = 1;
-                    for a=1:obj.n_agents
-                        %
-                        obj.positions(:,:,a) = x(end,start_:start_+1);
-                        %
-                        start_ = start_ + sz;
+                    if obj.dim ==2
+                        for a=1:obj.n_agents
+                            %
+                            obj.positions(:,:,a) = x(end,start_:start_+1);
+                            %
+                            start_ = start_ + sz;
+                        end
+                    elseif obj.dim==3
+                        for a=1:obj.n_agents
+                            %
+                            obj.positions(:,:,a) = x(end,start_:start_+2);
+                            %
+                            start_ = start_ + sz;
+                        end                        
                     end
                     if ie == 1
                         x0 = xe;
@@ -189,10 +198,14 @@ classdef Environment < handle
             
             % TODO move this away
             % plot the positions of the agents in time
-            f = figure();
-
+            fig = figure();
             if obj.dim == 2
-                scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o", 'LineWidth', 2); hold on
+                scatter(obj.p_t(1), obj.p_t(2), "cyan","Marker", "o",...
+                    'LineWidth', 2); hold on
+            elseif obj.dim ==3
+                scatter3(obj.p_t(1), obj.p_t(2), obj.p_t(3), "cyan",...
+                    "Marker", "o", 'LineWidth', 2); hold on
+
             else
                 error("cannot plot 3d yet")
             end
@@ -203,23 +216,43 @@ classdef Environment < handle
                 %
                 if obj.dim == 2
                     plot(X(:,start_), X(:,start_+1),"b"); hold on;
+                    plot(X(1,start_), X(1,start_+1),"g",'Marker','>',...
+                        'LineWidth',1);
+                    plot(X(end,start_), X(end,start_+1),"r",'Marker','x',...
+                        'LineWidth',1);
+                elseif obj.dim == 3
+                    plot3(X(1,start_), X(1,start_+1), X(1,start_+2),"g",'Marker','>',...
+                        'LineWidth',1);
+                    plot3(X(:,start_), X(:,start_+1), X(:,start_+2),"b"); hold on;
+                    plot3(X(end,start_), X(end,start_+1), X(end,start_+2),"r",'Marker','x',...
+                        'LineWidth',1);
+
                 else
-                    error("cannot plot 3d yet")
+                    error("cannotttt plot 3d yet")
                 end
                 %
                 start_ = start_ + sz;
             end
+
+        %Here we plot the values of x y and z along the period of
+        %simulation
             figure()
             if obj.dim == 2
                 plot(obj.estimate_history(:,1), obj.estimate_history(:,2),"r"); hold on;
                 plot(obj.estimate_history(:,1), obj.estimate_history(:,3),"g");
+                plot(obj.estimate_history(end,1),obj.p_t(1),'Marker','x','Color','r')
+                plot(obj.estimate_history(end,1),obj.p_t(2),'Marker','x','Color','g')
             elseif obj.dim == 3
                 plot(obj.estimate_history(:,1), obj.estimate_history(:,2),"r");hold on;
                 plot(obj.estimate_history(:,1), obj.estimate_history(:,3),"g");hold on;
                 plot(obj.estimate_history(:,1), obj.estimate_history(:,4),"b");hold on;
-            end    
-        end
+                plot(obj.estimate_history(end,1),obj.p_t(1),'r','Marker','x','LineWidth',2)
+                plot(obj.estimate_history(end,1),obj.p_t(2),'g','Marker','x','LineWidth',2)
+                plot(obj.estimate_history(end,1),obj.p_t(3),'b','Marker','x','LineWidth',2)
 
+            end    
+         
+        end
         % this function is the dynamic equations of
         % all the agents
         function [xdot, start_] = f(obj, t, x)
@@ -227,15 +260,13 @@ classdef Environment < handle
             sz = 2*obj.dim;
             start_ = 1;
 
-            for a=1:obj.n_agents
-                agent = obj.agents(a);
+            for aa=1:obj.n_agents
+                agent = obj.agents(aa);
                 %
                 xdot(start_:start_+sz-1) = agent.cl_dyn(t, x(start_:start_+sz-1));
                 %
                 start_ = start_ + sz;
             end
-
-         
         end
         
         % this function servers the purpose of telling ode45 
